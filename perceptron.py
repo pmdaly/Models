@@ -7,7 +7,7 @@ class Perceptron:
     Parameters
     ----------
     eta : float (default: 0.1), learning rate
-    epochs : int (default 100), number of passes over the dataset
+    epochs : int (default: 100), number of passes over the dataset
 
     Attributes
     ----------
