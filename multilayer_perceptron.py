@@ -39,20 +39,51 @@ class MLPClassifier:
             y_ = self._forward(X, y)
 
     def _forward(self, X, y):
-        return self._sigmoid(self._chain_mult([X,*self.W]))
+        f = lambda x, y : self._sigmoid(np.dot(x, y))
+        return reduce(f, [X,*self.W])
 
     def _backward(self, X, y):
+        # backprop with n_layers
 
     def score(self, X, y):
+        X = np.append(np.ones((X.shape[0],1)), X, 1)
+        y = np.array([-1 if yi == 0 else 1 for yi in y])
+        y_ = self._forward(X, y)
+        return np.mean(y_ == y)
 
-    def _sigmoid(self, x):
+    def _sigmoid(self, x, deriv=False):
+        if deriv:
+            return x * (1-x)
         return 1.0 / (1.0 + np.exp(-x))
-
-    def _chain_mult(args):
-        return reduce(np.dot, args)
 
 
 def main():
+
+    from sklearn.datasets import make_classification
+    from sklearn.cross_validation import train_test_split
+    from sklearn.linear_model import LogisticRegression
+
+    # build a generic classifier
+    X, y = make_classification(
+            n_samples=1000,
+            n_features=50,
+            n_informative=20,
+            n_classes=2
+            )
+    accuracy_mlp, accuracy_logit = [], []
+
+    for _ in range(5):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8)
+        mlp, logit = MLPClassifier(), LogisticRegression()
+        mlp.fit(X_train, y_train)
+        logit.fit(X_train, y_train)
+        accuracy_mlp.append(mlp.score(X_test, y_test))
+        accuracy_logit.append(logit.score(X_test, y_test))
+
+    print('Comparing Multilayer Perceptron to LogisticRegression as a baseline')
+    print('MLP accuracy: {}, LR Accuracy: {}'.format(
+        round(np.mean(accuracy_mlp),3), round(np.mean(accuracy_logit),3)))
+
 
 if __name__ == '__main__':
     main()
