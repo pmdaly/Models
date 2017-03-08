@@ -1,6 +1,9 @@
 import numpy as np
 from functools import reduce
 
+import ipdb
+#ipdb.set_trace()
+
 class MLPClassifier:
     """Multilayer Perceptron Classifier
 
@@ -24,26 +27,49 @@ class MLPClassifier:
 
     def fit(self, X, y):
 
-        if self.hidden_layers > 1:
-            self.W = [np.zeros((X.shape[1], X.shape[1]))
-                      for _ in range(self.hidden_layers - 1),
-                      np.zeros((X.shape[1], 1))]
-        else:
-            self.W = np.zeros((1 + X.shape[1]))
-        self.loss = []
-
         X = np.append(np.ones((X.shape[0],1)), X, 1)
         y = np.array([-1 if yi == 0 else 1 for yi in y])
 
+        self.W = [
+                np.zeros((X.shape[1], X.shape[1]))
+                for _ in range(self.hidden_layers - 1)
+                ]
+        self.W.append(np.zeros(X.shape[1]))
+
+
+        self.layers = [X] + [self.W]
+        self.loss = []
+
         for _ in range(self.epochs):
             y_ = self._forward(X, y)
+            self._backprop(y)
 
     def _forward(self, X, y):
+        for i in range(1, len(self.layers)):
+            previous_layer = self.layers[i-1]
+            self.layers[i] = self._sigmoid(
+                    np.dot(previous_layer, self.W[i-1])
+                    )
+        return y - self.layers[-1]
+
+    def _forward_old(self, X, y):
+        '''Clean function that multiplies the input by the chain of weights, I
+        can probably keep this for prediction
+        '''
         f = lambda x, y : self._sigmoid(np.dot(x, y))
         return reduce(f, [X,*self.W])
 
-    def _backward(self, X, y):
-        # backprop with n_layers
+    def _backprop(self, y):
+        '''Either a dimensionality mismatch or wrong operation, i.e. inner
+        product instead of Hadamard.
+        '''
+
+        layer_error = y - self.layers[-1]
+
+        for i in range(len(self.layers)):
+            layer_grad = layer_error * self._sigmoid(self.layers[i], deriv=True)
+            self.W[i] += self.layers[i].T.dot(layer_grad)
+            error = layer_grad.dot(self.W[i])
 
     def score(self, X, y):
         X = np.append(np.ones((X.shape[0],1)), X, 1)
@@ -58,6 +84,9 @@ class MLPClassifier:
 
 
 def main():
+    # need a better comparisson for MLP, this is just meant to say 'hey my MLP
+    #   classification isn't terrible when compared to fully supported
+    #   industrial classifiers'
 
     from sklearn.datasets import make_classification
     from sklearn.cross_validation import train_test_split
