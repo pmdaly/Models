@@ -20,29 +20,15 @@ class MLPClassifier:
     loss : list, loss function evaluated after each epoch
     """
 
-    def __init__(self, eta=0.1, epochs=100, n_layers=1):
+    def __init__(self, eta=0.1, epochs=100):
         self.eta = eta
         self.epochs = epochs
-        self.hidden_layers = n_layers
 
     def fit(self, X, y):
 
         X = np.append(np.ones((X.shape[0],1)), X, 1)
         y = np.array([-1 if yi == 0 else 1 for yi in y])
 
-        self.W = [
-                np.zeros((X.shape[1], X.shape[1]))
-                for _ in range(self.hidden_layers - 1)
-                ]
-        self.W.append(np.zeros(X.shape[1]))
-
-
-        self.layers = [X] + [self.W]
-        self.loss = []
-
-        for _ in range(self.epochs):
-            y_ = self._forward(X, y)
-            self._backprop(y)
 
     def _forward(self, X, y):
         for i in range(1, len(self.layers)):
@@ -66,8 +52,10 @@ class MLPClassifier:
 
         layer_error = y - self.layers[-1]
 
-        for i in range(len(self.layers)):
-            layer_grad = layer_error * self._sigmoid(self.layers[i], deriv=True)
+        for i in range(len(self.layers)-1,0,1):
+            layer_grad = np.multiply(
+                    layer_error[:, np.newaxis], self._sigmoid(self.layers[i], deriv=True)
+                    )
             self.W[i] += self.layers[i].T.dot(layer_grad)
             error = layer_grad.dot(self.W[i])
 
@@ -100,6 +88,10 @@ def main():
             n_classes=2
             )
     accuracy_mlp, accuracy_logit = [], []
+
+    from multilayer_perceptron import MLPClassifier
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8)
+    mlp = MLPClassifier().fit(X_train, y_train)
 
     for _ in range(5):
         X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8)
